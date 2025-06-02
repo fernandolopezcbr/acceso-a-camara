@@ -1,73 +1,121 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Escáner QR Local</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin-top: 40px;
-    }
-    #reader {
-      margin: auto;
-      width: 300px;
-      display: none;
-    }
-    #result {
-      margin-top: 20px;
-      font-size: 18px;
-      font-weight: bold;
-      color: green;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-  </style>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validación de Número</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+        }
+        .container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            width: 100%;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-  <h1>Escanear Código QR</h1>
 
-  <button id="btn-scan">Escanear QR</button>
-  <div id="reader"></div>
-  <p id="result">Esperando escaneo...</p>
+    <div class="container">
+        <h2>Validación de Número</h2>
+        <input type="text" id="inputNumber" placeholder="Ingresa el número">
+        <button onclick="validateNumber()">Validar</button>
+        <div class="result" id="result"></div>
+    </div>
 
-  <script>
-    const btnScan = document.getElementById('btn-scan');
-    const resultEl = document.getElementById('result');
-    const readerEl = document.getElementById('reader');
+    <script>
+        function validateNumber() {
+            // Obtener el número introducido
+            let number = document.getElementById("inputNumber").value.trim();
+            let result = document.getElementById("result");
 
-    let scanner = null;
+            // Validación de que el número tiene 10 caracteres
+            if (number.length !== 10) {
+                result.innerHTML = "Número inválido: debe tener 10 caracteres.";
+                result.style.color = "red";
+                return;
+            }
 
-    btnScan.addEventListener('click', () => {
-      // Mostrar el lector
-      readerEl.style.display = 'block';
+            // Validar el año (primeros 4 dígitos)
+            let year = parseInt(number.substring(0, 4));
+            if (year >= 2026) {
+                result.innerHTML = "Número no válido: año mayor o igual a 2026.";
+                result.style.color = "red";
+                return;
+            }
 
-      if (!scanner) {
-        scanner = new Html5Qrcode("reader");
+            // Extraer los primeros 9 dígitos y el dígito de control
+            let first9Digits = number.substring(0, 9);
+            let controlDigit = parseInt(number.substring(9, 10));
 
-        scanner.start(
-          { facingMode: "environment" }, // cámara trasera
-          { fps: 10, qrbox: 250 },
-          qrCodeMessage => {
-            resultEl.textContent = `Código detectado: ${qrCodeMessage}`;
-            scanner.stop().then(() => {
-              readerEl.style.display = 'none';
-              scanner.clear();
-              scanner = null;
-            });
-          },
-          errorMessage => {
-            // Ignorar errores pequeños
-          }
-        ).catch(err => {
-          resultEl.textContent = `Error al iniciar escáner: ${err}`;
-        });
-      }
-    });
-  </script>
+            // Calcular la suma de impares y pares
+            let sumImpares = 0;
+            let sumPares = 0;
+            for (let i = 0; i < 9; i++) {
+                let digit = parseInt(first9Digits.charAt(i));
+                // Contar las posiciones desde la derecha
+                if ((i % 2) === 0) { // Posición impar (empezando desde 1 en la derecha)
+                    sumImpares += digit;
+                } else { // Posición par
+                    sumPares += digit;
+                }
+            }
+
+            // Aplicar la fórmula de validación
+            let calculatedControlDigit = (3 * sumImpares + sumPares) % 10;
+
+            // Comparar el dígito de control calculado con el dígito ingresado
+            if (calculatedControlDigit === controlDigit) {
+                result.innerHTML = "Número válido.";
+                result.style.color = "green";
+            } else {
+                result.innerHTML = "Número inválido: dígito de control incorrecto.";
+                result.style.color = "red";
+            }
+        }
+    </script>
+
 </body>
 </html>
+
