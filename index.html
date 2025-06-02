@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Escáner QR Local</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 40px;
+    }
+    #reader {
+      margin: auto;
+      width: 300px;
+      display: none;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      color: green;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+  <h1>Escanear Código QR</h1>
+
+  <button id="btn-scan">Escanear QR</button>
+  <div id="reader"></div>
+  <p id="result">Esperando escaneo...</p>
+
+  <script>
+    const btnScan = document.getElementById('btn-scan');
+    const resultEl = document.getElementById('result');
+    const readerEl = document.getElementById('reader');
+
+    let scanner = null;
+
+    btnScan.addEventListener('click', () => {
+      // Mostrar el lector
+      readerEl.style.display = 'block';
+
+      if (!scanner) {
+        scanner = new Html5Qrcode("reader");
+
+        scanner.start(
+          { facingMode: "environment" }, // cámara trasera
+          { fps: 10, qrbox: 250 },
+          qrCodeMessage => {
+            resultEl.textContent = `Código detectado: ${qrCodeMessage}`;
+            scanner.stop().then(() => {
+              readerEl.style.display = 'none';
+              scanner.clear();
+              scanner = null;
+            });
+          },
+          errorMessage => {
+            // Ignorar errores pequeños
+          }
+        ).catch(err => {
+          resultEl.textContent = `Error al iniciar escáner: ${err}`;
+        });
+      }
+    });
+  </script>
+</body>
+</html>
