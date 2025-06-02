@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Validación de Número</title>
+    <title>Validación de Número desde QR</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -22,6 +22,7 @@
             padding: 20px;
             width: 100%;
             max-width: 400px;
+            text-align: center;
         }
         h2 {
             text-align: center;
@@ -53,24 +54,60 @@
             text-align: center;
             font-weight: bold;
         }
+        #qr-reader {
+            width: 100%;
+            height: 300px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
     </style>
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 </head>
 <body>
 
     <div class="container">
-        <h2>Validación de Número</h2>
-        <input type="text" id="inputNumber" placeholder="Ingresa el número">
+        <h2>Escanear QR y Validar Número</h2>
+
+        <!-- QR Scanner -->
+        <div id="qr-reader"></div>
+
+        <!-- Input to display scanned number -->
+        <input type="text" id="inputNumber" placeholder="Número escaneado aparecerá aquí" readonly>
         <button onclick="validateNumber()">Validar</button>
+
         <div class="result" id="result"></div>
     </div>
 
     <script>
+        // Función para iniciar el escaneo del QR
+        function onScanSuccess(decodedText, decodedResult) {
+            // Este evento se dispara cuando se escanea un QR correctamente.
+            document.getElementById("inputNumber").value = decodedText;
+        }
+
+        function onScanFailure(error) {
+            // Si ocurre algún error en el escaneo, puedes manejarlo aquí.
+            console.warn(`Error al escanear QR: ${error}`);
+        }
+
+        // Inicialización del escáner QR
+        const html5QrCode = new Html5Qrcode("qr-reader");
+        html5QrCode.start(
+            { facingMode: "environment" }, // usa la cámara trasera del dispositivo
+            {
+                fps: 10, // Frames por segundo, ajustable
+                qrbox: 250, // Tamaño del área del QR
+            },
+            onScanSuccess,
+            onScanFailure
+        );
+
+        // Función para validar el número escaneado
         function validateNumber() {
-            // Obtener el número introducido
             let number = document.getElementById("inputNumber").value.trim();
             let result = document.getElementById("result");
 
-            // Validación de que el número tiene 10 caracteres
             if (number.length !== 10) {
                 result.innerHTML = "Número inválido: debe tener 10 caracteres.";
                 result.style.color = "red";
@@ -118,4 +155,3 @@
 
 </body>
 </html>
-
