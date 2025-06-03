@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Validación de Número desde QR</title>
+    <title>Escanear y Validar Carné</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -27,14 +27,6 @@
         h2 {
             text-align: center;
             color: #333;
-        }
-        input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 2px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
         }
         button {
             background-color: #4CAF50;
@@ -60,6 +52,7 @@
             border: 2px solid #ddd;
             border-radius: 4px;
             margin-bottom: 20px;
+            display: none;
         }
     </style>
     <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
@@ -67,50 +60,68 @@
 <body>
 
     <div class="container">
-        <h2>Escanear QR y Validar Número</h2>
+        <h2>Escanear QR y Validar Carné</h2>
 
-        <!-- QR Scanner -->
+        <!-- Botón para iniciar el escaneo -->
+        <button id="scanBtn" onclick="startScan()">Escanear QR</button>
+
+        <!-- Área del lector QR -->
         <div id="qr-reader"></div>
 
-        <!-- Input to display scanned number -->
-        <input type="text" id="inputNumber" placeholder="Número escaneado aparecerá aquí" readonly>
-        <button onclick="validateNumber()">Validar</button>
-
+        <!-- Resultado de la validación -->
         <div class="result" id="result"></div>
     </div>
 
     <script>
-        // Función para iniciar el escaneo del QR
-        function onScanSuccess(decodedText, decodedResult) {
-            // Este evento se dispara cuando se escanea un QR correctamente.
-            document.getElementById("inputNumber").value = decodedText;
+        let html5QrCode; // Referencia a la instancia de html5-qrcode
+
+        // Función para iniciar el escaneo del QR cuando se presiona el botón "Escanear QR"
+        function startScan() {
+            document.getElementById("qr-reader").style.display = "block"; // Mostrar el área de escaneo
+            document.getElementById("scanBtn").style.display = "none";  // Ocultar el botón de escaneo
+
+            // Solicitar acceso a la cámara y empezar el escaneo
+            html5QrCode = new Html5Qrcode("qr-reader");
+
+            html5QrCode.start(
+                { facingMode: "environment" }, // Cámara trasera
+                {
+                    fps: 10, // Frames por segundo
+                    qrbox: 250, // Tamaño del área QR
+                },
+                onScanSuccess, // Función de éxito
+                onScanFailure  // Función de fallo
+            ).catch((err) => {
+                // Si el permiso no es concedido o hay un error
+                alert("Error al acceder a la cámara: " + err);
+            });
         }
 
+        // Callback cuando se escanea un código QR correctamente
+        function onScanSuccess(decodedText, decodedResult) {
+            // Detener el escaneo después de obtener el número
+            html5QrCode.stop();
+            document.getElementById("qr-reader").style.display = "none"; // Ocultar el lector
+            document.getElementById("scanBtn").style.display = "block"; // Mostrar el botón "Escanear QR"
+
+            // Validar el número escaneado
+            validateNumber(decodedText);
+        }
+
+        // Callback cuando ocurre un error en el escaneo del QR
         function onScanFailure(error) {
-            // Si ocurre algún error en el escaneo, puedes manejarlo aquí.
             console.warn(`Error al escanear QR: ${error}`);
         }
 
-        // Inicialización del escáner QR
-        const html5QrCode = new Html5Qrcode("qr-reader");
-        html5QrCode.start(
-            { facingMode: "environment" }, // usa la cámara trasera del dispositivo
-            {
-                fps: 10, // Frames por segundo, ajustable
-                qrbox: 250, // Tamaño del área del QR
-            },
-            onScanSuccess,
-            onScanFailure
-        );
-
         // Función para validar el número escaneado
-        function validateNumber() {
-            let number = document.getElementById("inputNumber").value.trim();
+        function validateNumber(number) {
             let result = document.getElementById("result");
 
+            // Validación de longitud (debe ser exactamente 10 caracteres)
             if (number.length !== 10) {
                 result.innerHTML = "Número inválido: debe tener 10 caracteres.";
                 result.style.color = "red";
+                speak("Número inválido: debe tener 10 caracteres.");
                 return;
             }
 
@@ -119,6 +130,7 @@
             if (year >= 2026) {
                 result.innerHTML = "Número no válido: año mayor o igual a 2026.";
                 result.style.color = "red";
+                speak("Número no válido: año mayor o igual a 2026.");
                 return;
             }
 
@@ -146,10 +158,18 @@
             if (calculatedControlDigit === controlDigit) {
                 result.innerHTML = "Número válido.";
                 result.style.color = "green";
+                speak("Número válido.");
             } else {
                 result.innerHTML = "Número inválido: dígito de control incorrecto.";
                 result.style.color = "red";
+                speak("Número inválido: dígito de control incorrecto.");
             }
+        }
+
+        // Función para emitir un mensaje de voz
+        function speak(message) {
+            let utterance = new SpeechSynthesisUtterance(message);
+            window.speechSynthesis.speak(utterance);
         }
     </script>
 
