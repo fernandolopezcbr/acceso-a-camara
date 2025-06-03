@@ -31,6 +31,7 @@
       width: 100%;
       height: auto;
       margin-top: 15px;
+      display: none;
     }
     button {
       padding: 10px;
@@ -60,15 +61,28 @@
       background-color: #f8d7da;
       color: #721c24;
     }
+    .icon {
+      font-size: 2em;
+      margin-top: 10px;
+    }
+    .check-icon {
+      color: #28a745;
+    }
+    .error-icon {
+      color: #dc3545;
+    }
   </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
 
   <div class="container">
     <h1>Escanear QR</h1>
-    <video id="camera" autoplay style="display: none;"></video>
+    <video id="camera" autoplay></video>
     <button id="btnScan" onclick="iniciarEscaneo()">Escanear QR</button>
     <div id="result"></div>
+    <div id="icon"></div>
+    <button id="btnRestart" onclick="reiniciarEscaneo()" style="display:none;">Escanear otro QR</button>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
@@ -76,23 +90,30 @@
     const video = document.getElementById('camera');
     const resultDiv = document.getElementById('result');
     const btnScan = document.getElementById('btnScan');
+    const btnRestart = document.getElementById('btnRestart');
+    const iconDiv = document.getElementById('icon');
+    
+    let escaneando = false;
 
     // Función para iniciar el escaneo cuando se presiona el botón
     async function iniciarEscaneo() {
       // Ocultamos el botón una vez que se presiona para evitar más clics
       btnScan.style.display = 'none';
       resultDiv.textContent = 'Iniciando cámara...';
+      iconDiv.innerHTML = ''; // Limpiar íconos anteriores
 
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
         video.srcObject = stream;
-        video.setAttribute("playsinline", true); // Esto es importante para dispositivos móviles
+        video.setAttribute("playsinline", true);
         video.style.display = 'block'; // Mostrar el video
         video.play();
+        escaneando = true;
         detectarQR();
       } catch (error) {
         resultDiv.textContent = 'Error al acceder a la cámara.';
         resultDiv.className = 'invalid';
+        iconDiv.innerHTML = ''; // Limpiar íconos
       }
     }
 
@@ -102,6 +123,8 @@
       const context = canvas.getContext('2d');
       
       function procesarQR() {
+        if (!escaneando) return; // Detener el proceso si no estamos escaneando
+
         if (video.videoWidth === 0 || video.videoHeight === 0) {
           requestAnimationFrame(procesarQR);
           return;
@@ -115,8 +138,9 @@
         const decodedQR = jsQR(imageData.data, canvas.width, canvas.height);
 
         if (decodedQR) {
-          resultDiv.textContent = `Valor del QR: ${decodedQR.data}`;
-          resultDiv.className = 'valid';
+          escaneando = false; // Detener el escaneo
+          video.style.display = 'none'; // Ocultar video
+          mostrarResultado(decodedQR.data); // Mostrar el resultado
         } else {
           resultDiv.textContent = 'Escaneando...';
           resultDiv.className = '';
@@ -126,6 +150,44 @@
       }
 
       procesarQR();
+    }
+
+    // Función para mostrar el resultado del escaneo
+    function mostrarResultado(valorQR) {
+      if (valorQR === "1234567890") { // Validar código (ajustar a tus necesidades)
+        resultDiv.textContent = `Código correcto: ${valorQR}`;
+        resultDiv.className = 'valid';
+        iconDiv.innerHTML = '<i class="fas fa-check-circle check-icon"></i>';
+        reproducirSonido('correcto');
+      } else {
+        resultDiv.textContent = `Código incorrecto: ${valorQR}`;
+        resultDiv.className = 'invalid';
+        iconDiv.innerHTML = '<i class="fas fa-times-circle error-icon"></i>';
+        reproducirSonido('incorrecto');
+      }
+
+      btnRestart.style.display = 'block'; // Mostrar el botón para escanear otro QR
+    }
+
+    // Función para reproducir sonido de verificación
+    function reproducirSonido(tipo) {
+      const audio = new Audio();
+      if (tipo === 'correcto') {
+        audio.src = 'https://www.soundjay.com/button/beep-07.wav'; // Sonido de verificación (puedes cambiarlo)
+      } else if (tipo === 'incorrecto') {
+        audio.src = 'https://www.soundjay.com/button/beep-05.wav'; // Sonido de error (puedes cambiarlo)
+      }
+      audio.play();
+    }
+
+    // Función para reiniciar el proceso de escaneo
+    function reiniciarEscaneo() {
+      btnRestart.style.display = 'none';
+      btnScan.style.display = 'block';
+      resultDiv.textContent = '';
+      iconDiv.innerHTML = '';
+      escaneando = false;
+      video.style.display = 'none';
     }
   </script>
 
