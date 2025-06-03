@@ -71,20 +71,21 @@
             color: #721c24;
         }
 
-        .icon {
-            font-size: 2em;
+        .icon-container {
             margin-top: 10px;
+            display: flex; /* Para alinear los íconos horizontalmente */
+            justify-content: center; /* Centrar los íconos */
+            gap: 10px; /* Espacio entre los íconos */
+            align-items: center;
+            flex-wrap: wrap; /* Permite que los íconos se envuelvan si hay muchos */
         }
 
-        .check-icon {
-            color: #28a745;
-        }
-
-        .error-icon {
-            color: #dc3545;
+        .icon-container img {
+            width: 50px; /* Ajusta el tamaño de tus íconos según sea necesario */
+            height: 50px;
+            vertical-align: middle; /* Alinea verticalmente la imagen con el texto */
         }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 
 <body>
@@ -94,9 +95,13 @@
         <video id="camera" autoplay></video>
         <button id="btnScan" onclick="iniciarEscaneo()">Escanear QR</button>
         <div id="result"></div>
-        <div id="icon"></div>
+        <div id="icon-container" class="icon-container"></div>
         <button id="btnRestart" onclick="reiniciarEscaneo()" style="display:none;">Escanear otro QR</button>
     </div>
+
+    <audio id="audioCorrecto" src="correct_sound.mp3" preload="auto"></audio>
+    <audio id="audioIncorrecto" src="incorrect_sound.mp3" preload="auto"></audio>
+
 
     <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
     <script>
@@ -104,16 +109,19 @@
         const resultDiv = document.getElementById('result');
         const btnScan = document.getElementById('btnScan');
         const btnRestart = document.getElementById('btnRestart');
-        const iconDiv = document.getElementById('icon');
+        const iconContainer = document.getElementById('icon-container'); // Cambiado a icon-container
+
+        // Referencias a los elementos de audio
+        const audioCorrecto = document.getElementById('audioCorrecto');
+        const audioIncorrecto = document.getElementById('audioIncorrecto');
 
         let escaneando = false;
 
         // Función para iniciar el escaneo cuando se presiona el botón
         async function iniciarEscaneo() {
-            // Ocultamos el botón una vez que se presiona para evitar más clics
             btnScan.style.display = 'none';
             resultDiv.textContent = 'Iniciando cámara...';
-            iconDiv.innerHTML = ''; // Limpiar íconos anteriores
+            iconContainer.innerHTML = ''; // Limpiar íconos anteriores
 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
@@ -126,7 +134,7 @@
             } catch (error) {
                 resultDiv.textContent = 'Error al acceder a la cámara. Asegúrate de dar permiso.';
                 resultDiv.className = 'invalid';
-                iconDiv.innerHTML = '<i class="fas fa-times-circle error-icon"></i>'; // Mostrar icono de error
+                iconContainer.innerHTML = '<img src="x.png" alt="Error">'; // Mostrar icono de error
                 reproducirSonido('incorrecto');
             }
         }
@@ -162,7 +170,7 @@
                 } else {
                     resultDiv.textContent = 'Escaneando...';
                     resultDiv.className = '';
-                    iconDiv.innerHTML = ''; // Limpiar iconos mientras escanea
+                    iconContainer.innerHTML = ''; // Limpiar iconos mientras escanea
                 }
 
                 requestAnimationFrame(procesarQR);
@@ -214,7 +222,7 @@
             if (!/^\d{10}$/.test(valorQR)) {
                 resultDiv.textContent = `Formato incorrecto: ${valorQR}. Se esperan 10 dígitos numéricos.`;
                 resultDiv.className = 'invalid';
-                iconDiv.innerHTML = '<i class="fas fa-times-circle error-icon"></i>';
+                iconContainer.innerHTML = '<img src="x.png" alt="Error">'; // Usar imagen de error
                 reproducirSonido('incorrecto');
                 btnRestart.style.display = 'block';
                 return;
@@ -226,32 +234,31 @@
             if (year >= 2026) {
                 resultDiv.textContent = `Carné no válido por el año: ${valorQR}`;
                 resultDiv.className = 'invalid';
-                iconDiv.innerHTML = '<i class="fas fa-times-circle error-icon"></i>';
+                iconContainer.innerHTML = '<img src="x.png" alt="Error">'; // Usar imagen de error
                 reproducirSonido('incorrecto');
             } else if (validarConISBN10(valorQR)) {
                 resultDiv.textContent = `Código correcto: ${valorQR}`;
                 resultDiv.className = 'valid';
-                iconDiv.innerHTML = '<i class="fas fa-check-circle check-icon"></i>';
+                // Mostrar ambas imágenes para el caso correcto
+                iconContainer.innerHTML = '<img src="successful.png" alt="Exitoso"> <img src="accept.png" alt="Aceptar">';
                 reproducirSonido('correcto');
             } else {
                 resultDiv.textContent = `Código incorrecto (validación fallida): ${valorQR}`;
                 resultDiv.className = 'invalid';
-                iconDiv.innerHTML = '<i class="fas fa-times-circle error-icon"></i>';
+                iconContainer.innerHTML = '<img src="x.png" alt="Error">'; // Usar imagen de error
                 reproducirSonido('incorrecto');
             }
 
             btnRestart.style.display = 'block'; // Mostrar el botón para escanear otro QR
         }
 
-        // Función para reproducir sonido de verificación
+        // Función para reproducir sonido desde los elementos de audio
         function reproducirSonido(tipo) {
-            const audio = new Audio();
             if (tipo === 'correcto') {
-                audio.src = 'https://www.soundjay.com/button/beep-07.wav'; // Sonido de verificación (puedes cambiarlo)
+                audioCorrecto.play().catch(e => console.error("Error al reproducir sonido correcto:", e));
             } else if (tipo === 'incorrecto') {
-                audio.src = 'https://www.soundjay.com/button/beep-05.wav'; // Sonido de error (puedes cambiarlo)
+                audioIncorrecto.play().catch(e => console.error("Error al reproducir sonido incorrecto:", e));
             }
-            audio.play();
         }
 
         // Función para reiniciar el proceso de escaneo
@@ -259,7 +266,7 @@
             btnRestart.style.display = 'none';
             btnScan.style.display = 'block';
             resultDiv.textContent = '';
-            iconDiv.innerHTML = '';
+            iconContainer.innerHTML = '';
             escaneando = false;
             video.style.display = 'none';
             // Asegurarse de que si la cámara estaba activa, se detenga
