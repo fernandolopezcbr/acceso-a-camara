@@ -2,12 +2,10 @@
 <html lang="es">
 
 <head>
-     
     <meta charset="UTF-8">
-     
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Escanear QR</title>
-      <style>
+    <title>Escanear QR</title>
+    <style>
         body {
             font-family: Arial, sans-serif;
             display: flex;
@@ -86,24 +84,21 @@
             color: #dc3545;
         }
     </style>
-     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 
 <body>
 
-      <div class="container">
-            <h1>Escanear QR</h1>
-            <video id="camera" autoplay></video>
-            <button id="btnScan" onclick="iniciarEscaneo()">Escanear QR</button>
-            <div id="result"></div>
-            <div id="icon"></div>
-            <button id="btnRestart" onclick="reiniciarEscaneo()" style="display:none;">Escanear otro QR</button>
-          </div>
+    <div class="container">
+        <h1>Escanear QR</h1>
+        <video id="camera" autoplay></video>
+        <button id="btnScan" onclick="iniciarEscaneo()">Escanear QR</button>
+        <div id="result"></div>
+        <div id="icon"></div>
+        <button id="btnRestart" onclick="reiniciarEscaneo()" style="display:none;">Escanear otro QR</button>
+    </div>
 
-     
     <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
-     
     <script>
         const video = document.getElementById('camera');
         const resultDiv = document.getElementById('result');
@@ -131,7 +126,8 @@
             } catch (error) {
                 resultDiv.textContent = 'Error al acceder a la cámara. Asegúrate de dar permiso.';
                 resultDiv.className = 'invalid';
-                iconDiv.innerHTML = ''; // Limpiar íconos
+                iconDiv.innerHTML = '<i class="fas fa-times-circle error-icon"></i>'; // Mostrar icono de error
+                reproducirSonido('incorrecto');
             }
         }
 
@@ -166,6 +162,7 @@
                 } else {
                     resultDiv.textContent = 'Escaneando...';
                     resultDiv.className = '';
+                    iconDiv.innerHTML = ''; // Limpiar iconos mientras escanea
                 }
 
                 requestAnimationFrame(procesarQR);
@@ -201,13 +198,6 @@
                 digitoVerificacionCalculado = 11 - resultadoModulo;
             }
 
-            // Si el dígito calculado es 10, y tu sistema lo trata como 0 o 'X',
-            // esto debe ser manejado aquí. Según tu ejemplo, 11 - 6 = 5.
-            // Si el resultado del módulo es 1, 11 - 1 = 10. Si ese 10 debe ser 'X' o 0,
-            // lo manejarías aquí. Por ahora, se asume que se compara como número.
-            // Si un 'X' aparece en el QR para el dígito de validación, necesitarías
-            // convertirlo a 10 para la comparación.
-
             console.log(`Número escaneado: ${numeroCompleto}`);
             console.log(`Primeros 9 dígitos: ${numeroSinDigito}`);
             console.log(`Dígito de verificación escaneado: ${digitoVerificacionEscaneado}`);
@@ -230,7 +220,15 @@
                 return;
             }
 
-            if (validarConISBN10(valorQR)) {
+            // Extraer el año del número de carné (asumiendo que los primeros 4 dígitos son el año)
+            const year = parseInt(valorQR.substring(0, 4), 10);
+
+            if (year >= 2026) {
+                resultDiv.textContent = `Carné no válido por el año: ${valorQR}`;
+                resultDiv.className = 'invalid';
+                iconDiv.innerHTML = '<i class="fas fa-times-circle error-icon"></i>';
+                reproducirSonido('incorrecto');
+            } else if (validarConISBN10(valorQR)) {
                 resultDiv.textContent = `Código correcto: ${valorQR}`;
                 resultDiv.className = 'valid';
                 iconDiv.innerHTML = '<i class="fas fa-check-circle check-icon"></i>';
