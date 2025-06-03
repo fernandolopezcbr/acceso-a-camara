@@ -53,12 +53,16 @@
             background-color: #45a049;
         }
 
-        #result {
+        /* Estilo para el contenedor del resultado */
+        #result-display {
             margin-top: 20px;
-            font-size: 1.1em;
             padding: 10px;
             border-radius: 5px;
-            margin-top: 15px;
+            display: flex; /* Usar flexbox para alinear contenido */
+            flex-direction: column; /* Colocar elementos en columna */
+            align-items: center; /* Centrar horizontalmente */
+            justify-content: center; /* Centrar verticalmente */
+            min-height: 120px; /* Altura mínima para que no salte al cambiar contenido */
         }
 
         .valid {
@@ -71,31 +75,47 @@
             color: #721c24;
         }
 
-        .icon-container {
-            margin-top: 10px;
-            display: flex; /* Para alinear los íconos horizontalmente */
-            justify-content: center; /* Centrar los íconos */
-            gap: 10px; /* Espacio entre los íconos */
-            align-items: center;
-            flex-wrap: wrap; /* Permite que los íconos se envuelvan si hay muchos */
+        /* Estilo para las imágenes de icono dentro de #result-display */
+        #result-display img {
+            width: 180px; /* Tamaño mediano para el icono */
+            height: 150px;
+            margin-bottom: 10px; /* Espacio entre el icono y el texto */
         }
 
-        .icon-container img {
-            width: 50px; /* Ajusta el tamaño de tus íconos según sea necesario */
-            height: 50px;
-            vertical-align: middle; /* Alinea verticalmente la imagen con el texto */
+        /* Estilo para el texto debajo del icono */
+        #result-display p {
+            font-size: 1.1em; /* Tamaño del texto */
+            margin: 0; /* Eliminar margen predeterminado del párrafo */
+            text-align: center;
+        }
+
+        .texto{
+          font-size: 24px;
         }
     </style>
 </head>
 
 <body>
 
+  <div id="result-display">
+        <img src="https://static.wixstatic.com/media/1724d0_0b595979fe6d498a965f54679c41b97d~mv2.png/v1/fill/w_288,h_223,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/1724d0_0b595979fe6d498a965f54679c41b97d~mv2.png" alt="">
+      <h1 id="texto" style="font-size: 12px;">Universidad Mesoamericana Facultad de ingenieria <br>
+        Inga. Nidia Castañeda <br>
+        Algebra Lineal <br>
+        Ingeniera en electronica <br>
+        Alumnos: Tomas Otzoy <br>
+        Luis Fernando Lopez 202407070
+
+        
+      </h1>      
+      </div>
+
     <div class="container">
+      
         <h1>Escanear QR</h1>
         <video id="camera" autoplay></video>
         <button id="btnScan" onclick="iniciarEscaneo()">Escanear QR</button>
-        <div id="result"></div>
-        <div id="icon-container" class="icon-container"></div>
+        
         <button id="btnRestart" onclick="reiniciarEscaneo()" style="display:none;">Escanear otro QR</button>
     </div>
 
@@ -106,10 +126,10 @@
     <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
     <script>
         const video = document.getElementById('camera');
-        const resultDiv = document.getElementById('result');
+        const resultDisplay = document.getElementById('result-display'); // Referencia al nuevo contenedor
+
         const btnScan = document.getElementById('btnScan');
         const btnRestart = document.getElementById('btnRestart');
-        const iconContainer = document.getElementById('icon-container'); // Cambiado a icon-container
 
         // Referencias a los elementos de audio
         const audioCorrecto = document.getElementById('audioCorrecto');
@@ -120,9 +140,9 @@
         // Función para iniciar el escaneo cuando se presiona el botón
         async function iniciarEscaneo() {
             btnScan.style.display = 'none';
-            resultDiv.textContent = 'Iniciando cámara...';
-            iconContainer.innerHTML = ''; // Limpiar íconos anteriores
-
+            resultDisplay.innerHTML = '<p>Iniciando cámara...</p>'; // Usar el nuevo contenedor
+            resultDisplay.className = ''; // Limpiar clases
+            
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                 video.srcObject = stream;
@@ -132,9 +152,8 @@
                 escaneando = true;
                 detectarQR();
             } catch (error) {
-                resultDiv.textContent = 'Error al acceder a la cámara. Asegúrate de dar permiso.';
-                resultDiv.className = 'invalid';
-                iconContainer.innerHTML = '<img src="x.png" alt="Error">'; // Mostrar icono de error
+                resultDisplay.innerHTML = '<img src="x.png" alt="Error"><p>Error al acceder a la cámara. Asegúrate de dar permiso.</p>';
+                resultDisplay.className = 'invalid';
                 reproducirSonido('incorrecto');
             }
         }
@@ -168,9 +187,8 @@
                     }
                     mostrarResultado(decodedQR.data); // Mostrar el resultado
                 } else {
-                    resultDiv.textContent = 'Escaneando...';
-                    resultDiv.className = '';
-                    iconContainer.innerHTML = ''; // Limpiar iconos mientras escanea
+                    resultDisplay.innerHTML = '<p>Escaneando...</p>';
+                    resultDisplay.className = '';
                 }
 
                 requestAnimationFrame(procesarQR);
@@ -220,9 +238,8 @@
         function mostrarResultado(valorQR) {
             // Validar que el valor QR sea numérico y tenga la longitud esperada (10 dígitos)
             if (!/^\d{10}$/.test(valorQR)) {
-                resultDiv.textContent = `Formato incorrecto: ${valorQR}. Se esperan 10 dígitos numéricos.`;
-                resultDiv.className = 'invalid';
-                iconContainer.innerHTML = '<img src="x.png" alt="Error">'; // Usar imagen de error
+                resultDisplay.innerHTML = `<img src="x.png" alt="Error"><p>Formato incorrecto: ${valorQR}. Se esperan 10 dígitos numéricos.</p>`;
+                resultDisplay.className = 'invalid';
                 reproducirSonido('incorrecto');
                 btnRestart.style.display = 'block';
                 return;
@@ -232,20 +249,19 @@
             const year = parseInt(valorQR.substring(0, 4), 10);
 
             if (year >= 2026) {
-                resultDiv.textContent = `Carné no válido por el año: ${valorQR}`;
-                resultDiv.className = 'invalid';
-                iconContainer.innerHTML = '<img src="x.png" alt="Error">'; // Usar imagen de error
+                resultDisplay.innerHTML = `<img src="x.png" alt="Error"><p>Carné no válido por el año: ${valorQR}</p>`;
+                resultDisplay.className = 'invalid';
                 reproducirSonido('incorrecto');
             } else if (validarConISBN10(valorQR)) {
-                resultDiv.textContent = `Código correcto: ${valorQR}`;
-                resultDiv.className = 'valid';
-                // Mostrar ambas imágenes para el caso correcto
-                iconContainer.innerHTML = '<img src="successful.png" alt="Exitoso"> <img src="accept.png" alt="Aceptar">';
+                // Aquí solo se mostrará successful.png como el icono "principal" y accept.png no.
+                // Si quieres mostrar ambos uno al lado del otro, el estilo de flexbox tendrá que ser ligeramente diferente,
+                // pero si quieres uno grande y un texto, esta es la forma más directa.
+                resultDisplay.innerHTML = `<img src="successful.png" alt="Exitoso"><p>Código correcto: ${valorQR}</p>`;
+                resultDisplay.className = 'valid';
                 reproducirSonido('correcto');
             } else {
-                resultDiv.textContent = `Código incorrecto (validación fallida): ${valorQR}`;
-                resultDiv.className = 'invalid';
-                iconContainer.innerHTML = '<img src="x.png" alt="Error">'; // Usar imagen de error
+                resultDisplay.innerHTML = `<img src="x.png" alt="Error"><p>Código incorrecto (validación fallida): ${valorQR}</p>`;
+                resultDisplay.className = 'invalid';
                 reproducirSonido('incorrecto');
             }
 
@@ -265,8 +281,8 @@
         function reiniciarEscaneo() {
             btnRestart.style.display = 'none';
             btnScan.style.display = 'block';
-            resultDiv.textContent = '';
-            iconContainer.innerHTML = '';
+            resultDisplay.innerHTML = ''; // Limpiar contenido del resultado
+            resultDisplay.className = ''; // Limpiar clases
             escaneando = false;
             video.style.display = 'none';
             // Asegurarse de que si la cámara estaba activa, se detenga
