@@ -1,258 +1,277 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Escanear QR</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      background-color: #f4f4f9;
-      flex-direction: column;
-    }
-    .container {
-      background-color: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-      width: 300px;
-      text-align: center;
-    }
-    h1 {
-      font-size: 1.5em;
-      margin-bottom: 20px;
-    }
-    #camera {
-      width: 100%;
-      height: auto;
-      margin-top: 15px;
-      display: none;
-    }
-    button {
-      padding: 10px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      font-size: 1.1em;
-      cursor: pointer;
-      margin-top: 20px;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    #result {
-      margin-top: 20px;
-      font-size: 1.1em;
-      padding: 10px;
-      border-radius: 5px;
-      margin-top: 15px;
-    }
-    .valid {
-      background-color: #d4edda;
-      color: #155724;
-    }
-    .invalid {
-      background-color: #f8d7da;
-      color: #721c24;
-    }
-    .icon {
-      font-size: 2em;
-      margin-top: 10px;
-    }
-    .check-icon {
-      color: #28a745;
-    }
-    .error-icon {
-      color: #dc3545;
-    }
-  </style>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+     
+    <meta charset="UTF-8">
+     
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escanear QR</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+            flex-direction: column;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+
+        #camera {
+            width: 100%;
+            height: auto;
+            margin-top: 15px;
+            display: none;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #result {
+            margin-top: 20px;
+            font-size: 1.1em;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+        .valid {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .invalid {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .icon {
+            font-size: 2em;
+            margin-top: 10px;
+        }
+
+        .check-icon {
+            color: #28a745;
+        }
+
+        .error-icon {
+            color: #dc3545;
+        }
+    </style>
+     
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
+
 <body>
 
-  <div class="container">
-    <h1>Escanear QR</h1>
-    <video id="camera" autoplay></video>
-    <button id="btnScan" onclick="iniciarEscaneo()">Escanear QR</button>
-    <div id="result"></div>
-    <div id="icon"></div>
-    <button id="btnRestart" onclick="reiniciarEscaneo()" style="display:none;">Escanear otro QR</button>
-  </div>
+      <div class="container">
+            <h1>Escanear QR</h1>
+            <video id="camera" autoplay></video>
+            <button id="btnScan" onclick="iniciarEscaneo()">Escanear QR</button>
+            <div id="result"></div>
+            <div id="icon"></div>
+            <button id="btnRestart" onclick="reiniciarEscaneo()" style="display:none;">Escanear otro QR</button>
+          </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
-  <script>
-    const video = document.getElementById('camera');
-    const resultDiv = document.getElementById('result');
-    const btnScan = document.getElementById('btnScan');
-    const btnRestart = document.getElementById('btnRestart');
-    const iconDiv = document.getElementById('icon');
-    
-    let escaneando = false;
+     
+    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+     
+    <script>
+        const video = document.getElementById('camera');
+        const resultDiv = document.getElementById('result');
+        const btnScan = document.getElementById('btnScan');
+        const btnRestart = document.getElementById('btnRestart');
+        const iconDiv = document.getElementById('icon');
 
-    // Función para iniciar el escaneo cuando se presiona el botón
-    async function iniciarEscaneo() {
-      // Ocultamos el botón una vez que se presiona para evitar más clics
-      btnScan.style.display = 'none';
-      resultDiv.textContent = 'Iniciando cámara...';
-      iconDiv.innerHTML = ''; // Limpiar íconos anteriores
+        let escaneando = false;
 
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        video.srcObject = stream;
-        video.setAttribute("playsinline", true);
-        video.style.display = 'block'; // Mostrar el video
-        video.play();
-        escaneando = true;
-        detectarQR();
-      } catch (error) {
-        resultDiv.textContent = 'Error al acceder a la cámara. Asegúrate de dar permiso.';
-        resultDiv.className = 'invalid';
-        iconDiv.innerHTML = ''; // Limpiar íconos
-      }
-    }
+        // Función para iniciar el escaneo cuando se presiona el botón
+        async function iniciarEscaneo() {
+            // Ocultamos el botón una vez que se presiona para evitar más clics
+            btnScan.style.display = 'none';
+            resultDiv.textContent = 'Iniciando cámara...';
+            iconDiv.innerHTML = ''; // Limpiar íconos anteriores
 
-    // Función para procesar y detectar el código QR
-    function detectarQR() {
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      
-      function procesarQR() {
-        if (!escaneando) return; // Detener el proceso si no estamos escaneando
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = stream;
+                video.setAttribute("playsinline", true);
+                video.style.display = 'block'; // Mostrar el video
+                video.play();
+                escaneando = true;
+                detectarQR();
+            } catch (error) {
+                resultDiv.textContent = 'Error al acceder a la cámara. Asegúrate de dar permiso.';
+                resultDiv.className = 'invalid';
+                iconDiv.innerHTML = ''; // Limpiar íconos
+            }
+        }
 
-        if (video.videoWidth === 0 || video.videoHeight === 0) {
-          requestAnimationFrame(procesarQR);
-          return;
-        }
+        // Función para procesar y detectar el código QR
+        function detectarQR() {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
 
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-        const decodedQR = jsQR(imageData.data, canvas.width, canvas.height);
+            function procesarQR() {
+                if (!escaneando) return; // Detener el proceso si no estamos escaneando
 
-        if (decodedQR) {
-          escaneando = false; // Detener el escaneo
-          video.style.display = 'none'; // Ocultar video
-          // Detener la transmisión de la cámara
-          if (video.srcObject) {
-            video.srcObject.getTracks().forEach(track => track.stop());
-          }
-          mostrarResultado(decodedQR.data); // Mostrar el resultado
-        } else {
-          resultDiv.textContent = 'Escaneando...';
-          resultDiv.className = '';
-        }
+                if (video.videoWidth === 0 || video.videoHeight === 0) {
+                    requestAnimationFrame(procesarQR);
+                    return;
+                }
 
-        requestAnimationFrame(procesarQR);
-      }
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      procesarQR();
-    }
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                const decodedQR = jsQR(imageData.data, canvas.width, canvas.height);
 
-    // Función para validar el número usando la lógica ISBN-10 ajustada
-    function validarConISBN10(numeroCompleto) {
-      // Asegurarse de que el número tenga al menos 10 dígitos
-      if (numeroCompleto.length < 10) {
-        console.log("Número demasiado corto para validación ISBN-10.");
-        return false;
-      }
+                if (decodedQR) {
+                    escaneando = false; // Detener el escaneo
+                    video.style.display = 'none'; // Ocultar video
+                    // Detener la transmisión de la cámara
+                    if (video.srcObject) {
+                        video.srcObject.getTracks().forEach(track => track.stop());
+                    }
+                    mostrarResultado(decodedQR.data); // Mostrar el resultado
+                } else {
+                    resultDiv.textContent = 'Escaneando...';
+                    resultDiv.className = '';
+                }
 
-      const numeroSinDigito = numeroCompleto.substring(0, 9);
-      const digitoVerificacionEscaneado = parseInt(numeroCompleto[9], 10);
+                requestAnimationFrame(procesarQR);
+            }
 
-      let suma = 0;
-      // Calcular la suma ponderada según la norma ISBN-10 (dígito 1 * 10, dígito 2 * 9, ..., dígito 9 * 2)
-      for (let i = 0; i < 9; i++) {
-        const digito = parseInt(numeroSinDigito[i], 10);
-        suma += digito * (10 - i); // Multiplica por (10 - índice) para obtener 10, 9, 8... 2
-      }
+            procesarQR();
+        }
 
-      const resultadoModulo = suma % 11;
-      let digitoVerificacionCalculado;
+        // Función para validar el número usando la lógica ISBN-10 ajustada
+        function validarConISBN10(numeroCompleto) {
+            // Asegurarse de que el número tenga al menos 10 dígitos
+            if (numeroCompleto.length < 10) {
+                console.log("Número demasiado corto para validación ISBN-10.");
+                return false;
+            }
 
-      if (resultadoModulo === 0) {
-        digitoVerificacionCalculado = 0;
-      } else {
-        digitoVerificacionCalculado = 11 - resultadoModulo;
-      }
-      
-      // Si el dígito calculado es 10, y tu sistema lo trata como 0 o 'X',
-      // esto debe ser manejado aquí. Según tu ejemplo, 11 - 6 = 5.
-      // Si el resultado del módulo es 1, 11 - 1 = 10. Si ese 10 debe ser 'X' o 0,
-      // lo manejarías aquí. Por ahora, se asume que se compara como número.
-      // Si un 'X' aparece en el QR para el dígito de validación, necesitarías
-      // convertirlo a 10 para la comparación.
+            const numeroSinDigito = numeroCompleto.substring(0, 9);
+            const digitoVerificacionEscaneado = parseInt(numeroCompleto[9], 10);
 
-      console.log(`Número escaneado: ${numeroCompleto}`);
-      console.log(`Primeros 9 dígitos: ${numeroSinDigito}`);
-      console.log(`Dígito de verificación escaneado: ${digitoVerificacionEscaneado}`);
-      console.log(`Suma ponderada: ${suma}`);
-      console.log(`Suma % 11: ${resultadoModulo}`);
-      console.log(`Dígito de verificación calculado: ${digitoVerificacionCalculado}`);
+            let suma = 0;
+            // Calcular la suma ponderada según la norma ISBN-10 (dígito 1 * 10, dígito 2 * 9, ..., dígito 9 * 2)
+            for (let i = 0; i < 9; i++) {
+                const digito = parseInt(numeroSinDigito[i], 10);
+                suma += digito * (10 - i); // Multiplica por (10 - índice) para obtener 10, 9, 8... 2
+            }
 
-      return digitoVerificacionCalculado === digitoVerificacionEscaneado;
-    }
+            const resultadoModulo = suma % 11;
+            let digitoVerificacionCalculado;
 
-    // Función para mostrar el resultado del escaneo
-    function mostrarResultado(valorQR) {
-      // Validar que el valor QR sea numérico y tenga la longitud esperada (10 dígitos)
-      if (!/^\d{10}$/.test(valorQR)) {
-        resultDiv.textContent = `Formato incorrecto: ${valorQR}. Se esperan 10 dígitos numéricos.`;
-        resultDiv.className = 'invalid';
-        iconDiv.innerHTML = '<i class="fas fa-times-circle error-icon"></i>';
-        reproducirSonido('incorrecto');
-        btnRestart.style.display = 'block';
-        return;
-      }
+            if (resultadoModulo === 0) {
+                digitoVerificacionCalculado = 0;
+            } else {
+                digitoVerificacionCalculado = 11 - resultadoModulo;
+            }
 
-      if (validarConISBN10(valorQR)) {
-        resultDiv.textContent = `Código correcto: ${valorQR}`;
-        resultDiv.className = 'valid';
-        iconDiv.innerHTML = '<i class="fas fa-check-circle check-icon"></i>';
-        reproducirSonido('correcto');
-      } else {
-        resultDiv.textContent = `Código incorrecto (validación fallida): ${valorQR}`;
-        resultDiv.className = 'invalid';
-        iconDiv.innerHTML = '<i class="fas fa-times-circle error-icon"></i>';
-        reproducirSonido('incorrecto');
-      }
+            // Si el dígito calculado es 10, y tu sistema lo trata como 0 o 'X',
+            // esto debe ser manejado aquí. Según tu ejemplo, 11 - 6 = 5.
+            // Si el resultado del módulo es 1, 11 - 1 = 10. Si ese 10 debe ser 'X' o 0,
+            // lo manejarías aquí. Por ahora, se asume que se compara como número.
+            // Si un 'X' aparece en el QR para el dígito de validación, necesitarías
+            // convertirlo a 10 para la comparación.
 
-      btnRestart.style.display = 'block'; // Mostrar el botón para escanear otro QR
-    }
+            console.log(`Número escaneado: ${numeroCompleto}`);
+            console.log(`Primeros 9 dígitos: ${numeroSinDigito}`);
+            console.log(`Dígito de verificación escaneado: ${digitoVerificacionEscaneado}`);
+            console.log(`Suma ponderada: ${suma}`);
+            console.log(`Suma % 11: ${resultadoModulo}`);
+            console.log(`Dígito de verificación calculado: ${digitoVerificacionCalculado}`);
 
-    // Función para reproducir sonido de verificación
-    function reproducirSonido(tipo) {
-      const audio = new Audio();
-      if (tipo === 'correcto') {
-        audio.src = 'https://www.soundjay.com/button/beep-07.wav'; // Sonido de verificación (puedes cambiarlo)
-      } else if (tipo === 'incorrecto') {
-        audio.src = 'https://www.soundjay.com/button/beep-05.wav'; // Sonido de error (puedes cambiarlo)
-      }
-      audio.play();
-    }
+            return digitoVerificacionCalculado === digitoVerificacionEscaneado;
+        }
 
-    // Función para reiniciar el proceso de escaneo
-    function reiniciarEscaneo() {
-      btnRestart.style.display = 'none';
-      btnScan.style.display = 'block';
-      resultDiv.textContent = '';
-      iconDiv.innerHTML = '';
-      escaneando = false;
-      video.style.display = 'none';
-      // Asegurarse de que si la cámara estaba activa, se detenga
-      if (video.srcObject) {
-        video.srcObject.getTracks().forEach(track => track.stop());
-        video.srcObject = null;
-      }
-    }
-  </script>
+        // Función para mostrar el resultado del escaneo
+        function mostrarResultado(valorQR) {
+            // Validar que el valor QR sea numérico y tenga la longitud esperada (10 dígitos)
+            if (!/^\d{10}$/.test(valorQR)) {
+                resultDiv.textContent = `Formato incorrecto: ${valorQR}. Se esperan 10 dígitos numéricos.`;
+                resultDiv.className = 'invalid';
+                iconDiv.innerHTML = '<i class="fas fa-times-circle error-icon"></i>';
+                reproducirSonido('incorrecto');
+                btnRestart.style.display = 'block';
+                return;
+            }
+
+            if (validarConISBN10(valorQR)) {
+                resultDiv.textContent = `Código correcto: ${valorQR}`;
+                resultDiv.className = 'valid';
+                iconDiv.innerHTML = '<i class="fas fa-check-circle check-icon"></i>';
+                reproducirSonido('correcto');
+            } else {
+                resultDiv.textContent = `Código incorrecto (validación fallida): ${valorQR}`;
+                resultDiv.className = 'invalid';
+                iconDiv.innerHTML = '<i class="fas fa-times-circle error-icon"></i>';
+                reproducirSonido('incorrecto');
+            }
+
+            btnRestart.style.display = 'block'; // Mostrar el botón para escanear otro QR
+        }
+
+        // Función para reproducir sonido de verificación
+        function reproducirSonido(tipo) {
+            const audio = new Audio();
+            if (tipo === 'correcto') {
+                audio.src = 'https://www.soundjay.com/button/beep-07.wav'; // Sonido de verificación (puedes cambiarlo)
+            } else if (tipo === 'incorrecto') {
+                audio.src = 'https://www.soundjay.com/button/beep-05.wav'; // Sonido de error (puedes cambiarlo)
+            }
+            audio.play();
+        }
+
+        // Función para reiniciar el proceso de escaneo
+        function reiniciarEscaneo() {
+            btnRestart.style.display = 'none';
+            btnScan.style.display = 'block';
+            resultDiv.textContent = '';
+            iconDiv.innerHTML = '';
+            escaneando = false;
+            video.style.display = 'none';
+            // Asegurarse de que si la cámara estaba activa, se detenga
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+        }
+    </script>
 
 </body>
+
 </html>
