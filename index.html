@@ -1,177 +1,196 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Escanear y Validar Carné</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f4f4f9;
-        }
-        .container {
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            padding: 20px;
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-        h2 {
-            text-align: center;
-            color: #333;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px;
-            width: 100%;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .result {
-            margin-top: 20px;
-            text-align: center;
-            font-weight: bold;
-        }
-        #qr-reader {
-            width: 100%;
-            height: 300px;
-            border: 2px solid #ddd;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            display: none;
-        }
-    </style>
-    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escanear y Validar QR</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f4f4f9;
+      flex-direction: column;
+    }
+    .container {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+      width: 300px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 1.5em;
+      margin-bottom: 20px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 1.1em;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 1.1em;
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 15px;
+    }
+    .valid {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .invalid {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    #scanner {
+      display: none;
+      width: 100%;
+      height: auto;
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2>Escanear QR y Validar Carné</h2>
+  <div class="container">
+    <h1>Escanear Código QR</h1>
+    <button onclick="startScanner()">Iniciar Escaneo</button>
+    <video id="scanner" autoplay></video>
+    <input type="text" id="numeroQR" placeholder="O ingresa manualmente" maxlength="10">
+    <button onclick="validarNumeroQR()">Validar</button>
+    <div id="result"></div>
+  </div>
 
-        <!-- Botón para iniciar el escaneo -->
-        <button id="scanBtn" onclick="startScan()">Escanear QR</button>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+  <script>
+    let video;
+    let canvasElement;
+    let canvasContext;
 
-        <!-- Área del lector QR -->
-        <div id="qr-reader"></div>
+    // Función para iniciar el escáner de QR
+    function startScanner() {
+      video = document.getElementById("scanner");
+      canvasElement = document.createElement("canvas");
+      canvasContext = canvasElement.getContext("2d");
 
-        <!-- Resultado de la validación -->
-        <div class="result" id="result"></div>
-    </div>
+      // Mostrar el video de la cámara
+      video.style.display = "block";
 
-    <script>
-        let html5QrCode; // Referencia a la instancia de html5-qrcode
+      // Obtener acceso a la cámara
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then((stream) => {
+          video.srcObject = stream;
+          requestAnimationFrame(scanQRCode);
+        })
+        .catch((err) => {
+          console.error("Error al acceder a la cámara:", err);
+          alert("No se pudo acceder a la cámara.");
+        });
+    }
 
-        // Función para iniciar el escaneo del QR cuando se presiona el botón "Escanear QR"
-        function startScan() {
-            document.getElementById("qr-reader").style.display = "block"; // Mostrar el área de escaneo
-            document.getElementById("scanBtn").style.display = "none";  // Ocultar el botón de escaneo
+    // Función para escanear el QR
+    function scanQRCode() {
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        // Establecer el tamaño del canvas según el tamaño del video
+        canvasElement.height = video.videoHeight;
+        canvasElement.width = video.videoWidth;
 
-            // Solicitar acceso a la cámara y empezar el escaneo
-            html5QrCode = new Html5Qrcode("qr-reader");
+        // Dibujar el fotograma del video en el canvas
+        canvasContext.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
 
-            html5QrCode.start(
-                { facingMode: "environment" }, // Cámara trasera
-                {
-                    fps: 10, // Frames por segundo
-                    qrbox: 250, // Tamaño del área QR
-                },
-                onScanSuccess, // Función de éxito
-                onScanFailure  // Función de fallo
-            ).catch((err) => {
-                // Si el permiso no es concedido o hay un error
-                alert("Error al acceder a la cámara: " + err);
-            });
+        // Obtener la imagen del canvas y buscar el QR
+        const imageData = canvasContext.getImageData(0, 0, canvasElement.width, canvasElement.height);
+        const code = jsQR(imageData.data, canvasElement.width, canvasElement.height, {
+          inversionAttempts: "dontInvert",
+        });
+
+        if (code) {
+          // Si encontramos un código QR, procesarlo
+          const numeroQR = code.data;
+          document.getElementById("numeroQR").value = numeroQR;
+          validarNumeroQR(); // Validar el código QR automáticamente
+          return;
         }
+      }
+      // Continuar con la captura de video
+      requestAnimationFrame(scanQRCode);
+    }
 
-        // Callback cuando se escanea un código QR correctamente
-        function onScanSuccess(decodedText, decodedResult) {
-            // Detener el escaneo después de obtener el número
-            html5QrCode.stop();
-            document.getElementById("qr-reader").style.display = "none"; // Ocultar el lector
-            document.getElementById("scanBtn").style.display = "block"; // Mostrar el botón "Escanear QR"
+    // Función para validar el número QR
+    function validarNumeroQR() {
+      const numero = document.getElementById("numeroQR").value;
+      const resultadoDiv = document.getElementById("result");
 
-            // Validar el número escaneado
-            validateNumber(decodedText);
+      // Paso 1: Extraer el año (primeros 4 dígitos)
+      const año = parseInt(numero.substring(0, 4));
+      
+      // Validar el año
+      if (año >= 2026) {
+        resultadoDiv.textContent = "Número no válido: año mayor o igual a 2026";
+        resultadoDiv.className = "invalid";
+        return;
+      }
+
+      // Paso 2: Validar el dígito de control
+      if (numero.length !== 10) {
+        resultadoDiv.textContent = "Número no válido: debe tener 10 dígitos";
+        resultadoDiv.className = "invalid";
+        return;
+      }
+
+      // Extraer los primeros 9 dígitos y el dígito de control
+      const digitos = numero.substring(0, 9).split('').map(Number); // Los primeros 9 dígitos como números
+      const digitoControl = parseInt(numero.charAt(9)); // El último dígito como número
+
+      // Paso 3: Calcular la suma de los impares y los pares
+      let sumaImpares = 0;
+      let sumaPares = 0;
+
+      for (let i = 0; i < digitos.length; i++) {
+        // Posición contando desde la derecha
+        const pos = digitos.length - i;
+
+        if (pos % 2 === 1) { // Impares
+          sumaImpares += digitos[i];
+        } else { // Pares
+          sumaPares += digitos[i];
         }
+      }
 
-        // Callback cuando ocurre un error en el escaneo del QR
-        function onScanFailure(error) {
-            console.warn(`Error al escanear QR: ${error}`);
-        }
+      // Fórmula de validación del dígito de control
+      const digitoCalculado = (3 * sumaImpares + sumaPares) % 10;
 
-        // Función para validar el número escaneado
-        function validateNumber(number) {
-            let result = document.getElementById("result");
-
-            // Validación de longitud (debe ser exactamente 10 caracteres)
-            if (number.length !== 10) {
-                result.innerHTML = "Número inválido: debe tener 10 caracteres.";
-                result.style.color = "red";
-                speak("Número inválido: debe tener 10 caracteres.");
-                return;
-            }
-
-            // Validar el año (primeros 4 dígitos)
-            let year = parseInt(number.substring(0, 4));
-            if (year >= 2026) {
-                result.innerHTML = "Número no válido: año mayor o igual a 2026.";
-                result.style.color = "red";
-                speak("Número no válido: año mayor o igual a 2026.");
-                return;
-            }
-
-            // Extraer los primeros 9 dígitos y el dígito de control
-            let first9Digits = number.substring(0, 9);
-            let controlDigit = parseInt(number.substring(9, 10));
-
-            // Calcular la suma de impares y pares
-            let sumImpares = 0;
-            let sumPares = 0;
-            for (let i = 0; i < 9; i++) {
-                let digit = parseInt(first9Digits.charAt(i));
-                // Contar las posiciones desde la derecha
-                if ((i % 2) === 0) { // Posición impar (empezando desde 1 en la derecha)
-                    sumImpares += digit;
-                } else { // Posición par
-                    sumPares += digit;
-                }
-            }
-
-            // Aplicar la fórmula de validación
-            let calculatedControlDigit = (3 * sumImpares + sumPares) % 10;
-
-            // Comparar el dígito de control calculado con el dígito ingresado
-            if (calculatedControlDigit === controlDigit) {
-                result.innerHTML = "Número válido.";
-                result.style.color = "green";
-                speak("Número válido.");
-            } else {
-                result.innerHTML = "Número inválido: dígito de control incorrecto.";
-                result.style.color = "red";
-                speak("Número inválido: dígito de control incorrecto.");
-            }
-        }
-
-        // Función para emitir un mensaje de voz
-        function speak(message) {
-            let utterance = new SpeechSynthesisUtterance(message);
-            window.speechSynthesis.speak(utterance);
-        }
-    </script>
+      // Validar si el dígito de control coincide
+      if (digitoCalculado === digitoControl) {
+        resultadoDiv.textContent = "Número válido";
+        resultadoDiv.className = "valid";
+      } else {
+        resultadoDiv.textContent = "Número no válido: dígito de control incorrecto";
+        resultadoDiv.className = "invalid";
+      }
+    }
+  </script>
 
 </body>
 </html>
