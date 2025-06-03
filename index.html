@@ -11,7 +11,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            height: 65vh;
             margin: 0;
             background-color: #f4f4f9;
             flex-direction: column;
@@ -89,9 +89,6 @@
             text-align: center;
         }
 
-        .texto{
-          font-size: 24px;
-        }
     </style>
 </head>
 
@@ -256,11 +253,11 @@
                 // Aquí solo se mostrará successful.png como el icono "principal" y accept.png no.
                 // Si quieres mostrar ambos uno al lado del otro, el estilo de flexbox tendrá que ser ligeramente diferente,
                 // pero si quieres uno grande y un texto, esta es la forma más directa.
-                resultDisplay.innerHTML = `<img src="successful.png" alt="Exitoso"><p>Código correcto: ${valorQR}</p>`;
+                resultDisplay.innerHTML = `<img src="successful.png" alt="Exitoso"><p>Numero de Carne correcto: ${valorQR}</p>`;
                 resultDisplay.className = 'valid';
                 reproducirSonido('correcto');
             } else {
-                resultDisplay.innerHTML = `<img src="x.png" alt="Error"><p>Código incorrecto (validación fallida): ${valorQR}</p>`;
+                resultDisplay.innerHTML = `<img src="x.png" alt="Error"><p>Numero de Carne incorrecto (validación fallida): ${valorQR}</p>`;
                 resultDisplay.className = 'invalid';
                 reproducirSonido('incorrecto');
             }
