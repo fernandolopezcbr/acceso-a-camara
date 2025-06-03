@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Validar Carné (ISBN-10)</title>
+  <title>Escanear QR</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -27,14 +27,12 @@
       font-size: 1.5em;
       margin-bottom: 20px;
     }
-    #scanner-container {
+    #camera {
       width: 100%;
-      height: 300px;
-      margin-bottom: 20px;
-      display: none; /* Inicialmente oculto */
+      height: auto;
+      margin-top: 15px;
     }
     button {
-      width: 100%;
       padding: 10px;
       background-color: #4CAF50;
       color: white;
@@ -42,6 +40,7 @@
       border-radius: 5px;
       font-size: 1.1em;
       cursor: pointer;
+      margin-top: 20px;
     }
     button:hover {
       background-color: #45a049;
@@ -62,81 +61,73 @@
       color: #721c24;
     }
   </style>
-  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 </head>
 <body>
 
   <div class="container">
-    <h1>Validar Carné (ISBN-10)</h1>
-    <div id="scanner-container"></div>
-    <button onclick="startScanner()">Escanear QR</button>
+    <h1>Escanear QR</h1>
+    <video id="camera" autoplay style="display: none;"></video>
+    <button id="btnScan" onclick="iniciarEscaneo()">Escanear QR</button>
     <div id="result"></div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
   <script>
-    // Función para validar ISBN-10
-    function validarCarnet(numero) {
-      const resultadoDiv = document.getElementById("result");
+    const video = document.getElementById('camera');
+    const resultDiv = document.getElementById('result');
+    const btnScan = document.getElementById('btnScan');
 
-      // Paso 1: Verificar si tiene exactamente 10 dígitos
-      if (numero.length !== 10) {
-        resultadoDiv.textContent = "Número no válido: debe tener 10 dígitos";
-        resultadoDiv.className = "invalid";
-        return;
-      }
+    // Función para iniciar el escaneo cuando se presiona el botón
+    async function iniciarEscaneo() {
+      // Ocultamos el botón una vez que se presiona para evitar más clics
+      btnScan.style.display = 'none';
+      resultDiv.textContent = 'Iniciando cámara...';
 
-      // Paso 2: Extraer los primeros 9 dígitos
-      const primerosNueve = numero.substring(0, 9);
-      const digitoControl = parseInt(numero[9]);
-
-      // Paso 3: Validar la fórmula de control del ISBN-10
-      let suma = 0;
-      for (let i = 0; i < 9; i++) {
-        const digito = parseInt(primerosNueve[i]);
-        if (isNaN(digito)) {
-          resultadoDiv.textContent = "Número no válido: contiene caracteres no numéricos";
-          resultadoDiv.className = "invalid";
-          return;
-        }
-        suma += digito * (10 - i);
-      }
-
-      // Paso 4: Verificar el dígito de control
-      const modulo11 = suma % 11;
-      const digitoValidacion = 11 - modulo11;
-
-      // Paso 5: Comparar el dígito de control con el proporcionado
-      if (digitoValidacion === digitoControl) {
-        resultadoDiv.textContent = "Número válido";
-        resultadoDiv.className = "valid";
-      } else {
-        resultadoDiv.textContent = "Número no válido: dígito de control incorrecto";
-        resultadoDiv.className = "invalid";
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        video.srcObject = stream;
+        video.setAttribute("playsinline", true); // Esto es importante para dispositivos móviles
+        video.style.display = 'block'; // Mostrar el video
+        video.play();
+        detectarQR();
+      } catch (error) {
+        resultDiv.textContent = 'Error al acceder a la cámara.';
+        resultDiv.className = 'invalid';
       }
     }
 
-    // Función para iniciar el escáner QR
-    function startScanner() {
-      const qrCodeScanner = new Html5QrcodeScanner(
-        "scanner-container", 
-        { fps: 10, qrbox: 250 }, 
-        false
-      );
+    // Función para procesar y detectar el código QR
+    function detectarQR() {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      
+      function procesarQR() {
+        if (video.videoWidth === 0 || video.videoHeight === 0) {
+          requestAnimationFrame(procesarQR);
+          return;
+        }
 
-      // Mostrar el contenedor del escáner
-      document.getElementById("scanner-container").style.display = "block";
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const decodedQR = jsQR(imageData.data, canvas.width, canvas.height);
 
-      qrCodeScanner.render((decodedText) => {
-        console.log("Código QR escaneado: ", decodedText);
-        validarCarnet(decodedText);
-        qrCodeScanner.clear(); // Detener el escáner después de escanear
-        document.getElementById("scanner-container").style.display = "none"; // Ocultar el escáner
-      }, (errorMessage) => {
-        // Aquí puedes manejar errores si no se encuentra un QR o si el QR es ilegible
-      });
+        if (decodedQR) {
+          resultDiv.textContent = `Valor del QR: ${decodedQR.data}`;
+          resultDiv.className = 'valid';
+        } else {
+          resultDiv.textContent = 'Escaneando...';
+          resultDiv.className = '';
+        }
+
+        requestAnimationFrame(procesarQR);
+      }
+
+      procesarQR();
     }
   </script>
 
 </body>
 </html>
-
