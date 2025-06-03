@@ -156,7 +156,7 @@
       procesarQR();
     }
 
-    // Nueva función para validar el número usando la lógica ISBN-10
+    // Función para validar el número usando la lógica ISBN-10 ajustada
     function validarConISBN10(numeroCompleto) {
       // Asegurarse de que el número tenga al menos 10 dígitos
       if (numeroCompleto.length < 10) {
@@ -168,9 +168,10 @@
       const digitoVerificacionEscaneado = parseInt(numeroCompleto[9], 10);
 
       let suma = 0;
+      // Calcular la suma ponderada según la norma ISBN-10 (dígito 1 * 10, dígito 2 * 9, ..., dígito 9 * 2)
       for (let i = 0; i < 9; i++) {
         const digito = parseInt(numeroSinDigito[i], 10);
-        suma += digito * (i + 1);
+        suma += digito * (10 - i); // Multiplica por (10 - índice) para obtener 10, 9, 8... 2
       }
 
       const resultadoModulo = suma % 11;
@@ -182,15 +183,12 @@
         digitoVerificacionCalculado = 11 - resultadoModulo;
       }
       
-      // En ISBN-10, si el dígito calculado es 10, se representa con 'X'
-      // En tu caso, si el resultado es 10, el dígito de validación es 0.
-      // Pero si el ejemplo 2023070325, donde el resultado del modulo es 6,
-      // entonces el digito de validacion es 5.
-      // Si tu lógica es que el 10 se convierte en 0 para el dígito de validación,
-      // deberías ajustar esta parte. Según tu ejemplo, el 105 mod 11 es 6,
-      // y 11-6 = 5. Así que parece que siempre es 11 - (suma % 11).
-      // La única excepción es si el resultado del módulo es 0, en cuyo caso
-      // el dígito de verificación es 0.
+      // Si el dígito calculado es 10, y tu sistema lo trata como 0 o 'X',
+      // esto debe ser manejado aquí. Según tu ejemplo, 11 - 6 = 5.
+      // Si el resultado del módulo es 1, 11 - 1 = 10. Si ese 10 debe ser 'X' o 0,
+      // lo manejarías aquí. Por ahora, se asume que se compara como número.
+      // Si un 'X' aparece en el QR para el dígito de validación, necesitarías
+      // convertirlo a 10 para la comparación.
 
       console.log(`Número escaneado: ${numeroCompleto}`);
       console.log(`Primeros 9 dígitos: ${numeroSinDigito}`);
@@ -199,13 +197,12 @@
       console.log(`Suma % 11: ${resultadoModulo}`);
       console.log(`Dígito de verificación calculado: ${digitoVerificacionCalculado}`);
 
-
       return digitoVerificacionCalculado === digitoVerificacionEscaneado;
     }
 
     // Función para mostrar el resultado del escaneo
     function mostrarResultado(valorQR) {
-      // Validar que el valor QR sea numérico y tenga la longitud esperada (por ejemplo, 10 dígitos)
+      // Validar que el valor QR sea numérico y tenga la longitud esperada (10 dígitos)
       if (!/^\d{10}$/.test(valorQR)) {
         resultDiv.textContent = `Formato incorrecto: ${valorQR}. Se esperan 10 dígitos numéricos.`;
         resultDiv.className = 'invalid';
