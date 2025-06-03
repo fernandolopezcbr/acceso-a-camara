@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Escanear y Validar QR</title>
+  <title>Validar Carné (ISBN-10)</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -27,13 +27,11 @@
       font-size: 1.5em;
       margin-bottom: 20px;
     }
-    input {
+    #scanner-container {
       width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      font-size: 1em;
+      height: 300px;
+      margin-bottom: 20px;
+      display: none; /* Inicialmente oculto */
     }
     button {
       width: 100%;
@@ -63,126 +61,52 @@
       background-color: #f8d7da;
       color: #721c24;
     }
-    #scanner {
-      display: none;
-      width: 100%;
-      height: auto;
-      margin-top: 20px;
-    }
   </style>
+  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 </head>
 <body>
 
   <div class="container">
-    <h1>Escanear Código QR</h1>
-    <button onclick="startScanner()">Iniciar Escaneo</button>
-    <video id="scanner" autoplay></video>
-    <input type="text" id="numeroQR" placeholder="O ingresa manualmente" maxlength="10">
-    <button onclick="validarNumeroQR()">Validar</button>
+    <h1>Validar Carné (ISBN-10)</h1>
+    <div id="scanner-container"></div>
+    <button onclick="startScanner()">Escanear QR</button>
     <div id="result"></div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
   <script>
-    let video;
-    let canvasElement;
-    let canvasContext;
-
-    // Función para iniciar el escáner de QR
-    function startScanner() {
-      video = document.getElementById("scanner");
-      canvasElement = document.createElement("canvas");
-      canvasContext = canvasElement.getContext("2d");
-
-      // Mostrar el video de la cámara
-      video.style.display = "block";
-
-      // Obtener acceso a la cámara
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-        .then((stream) => {
-          video.srcObject = stream;
-          requestAnimationFrame(scanQRCode);
-        })
-        .catch((err) => {
-          console.error("Error al acceder a la cámara:", err);
-          alert("No se pudo acceder a la cámara.");
-        });
-    }
-
-    // Función para escanear el QR
-    function scanQRCode() {
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        // Establecer el tamaño del canvas según el tamaño del video
-        canvasElement.height = video.videoHeight;
-        canvasElement.width = video.videoWidth;
-
-        // Dibujar el fotograma del video en el canvas
-        canvasContext.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-
-        // Obtener la imagen del canvas y buscar el QR
-        const imageData = canvasContext.getImageData(0, 0, canvasElement.width, canvasElement.height);
-        const code = jsQR(imageData.data, canvasElement.width, canvasElement.height, {
-          inversionAttempts: "dontInvert",
-        });
-
-        if (code) {
-          // Si encontramos un código QR, procesarlo
-          const numeroQR = code.data;
-          document.getElementById("numeroQR").value = numeroQR;
-          validarNumeroQR(); // Validar el código QR automáticamente
-          return;
-        }
-      }
-      // Continuar con la captura de video
-      requestAnimationFrame(scanQRCode);
-    }
-
-    // Función para validar el número QR
-    function validarNumeroQR() {
-      const numero = document.getElementById("numeroQR").value;
+    // Función para validar ISBN-10
+    function validarCarnet(numero) {
       const resultadoDiv = document.getElementById("result");
 
-      // Paso 1: Extraer el año (primeros 4 dígitos)
-      const año = parseInt(numero.substring(0, 4));
-      
-      // Validar el año
-      if (año >= 2026) {
-        resultadoDiv.textContent = "Número no válido: año mayor o igual a 2026";
-        resultadoDiv.className = "invalid";
-        return;
-      }
-
-      // Paso 2: Validar el dígito de control
+      // Paso 1: Verificar si tiene exactamente 10 dígitos
       if (numero.length !== 10) {
         resultadoDiv.textContent = "Número no válido: debe tener 10 dígitos";
         resultadoDiv.className = "invalid";
         return;
       }
 
-      // Extraer los primeros 9 dígitos y el dígito de control
-      const digitos = numero.substring(0, 9).split('').map(Number); // Los primeros 9 dígitos como números
-      const digitoControl = parseInt(numero.charAt(9)); // El último dígito como número
+      // Paso 2: Extraer los primeros 9 dígitos
+      const primerosNueve = numero.substring(0, 9);
+      const digitoControl = parseInt(numero[9]);
 
-      // Paso 3: Calcular la suma de los impares y los pares
-      let sumaImpares = 0;
-      let sumaPares = 0;
-
-      for (let i = 0; i < digitos.length; i++) {
-        // Posición contando desde la derecha
-        const pos = digitos.length - i;
-
-        if (pos % 2 === 1) { // Impares
-          sumaImpares += digitos[i];
-        } else { // Pares
-          sumaPares += digitos[i];
+      // Paso 3: Validar la fórmula de control del ISBN-10
+      let suma = 0;
+      for (let i = 0; i < 9; i++) {
+        const digito = parseInt(primerosNueve[i]);
+        if (isNaN(digito)) {
+          resultadoDiv.textContent = "Número no válido: contiene caracteres no numéricos";
+          resultadoDiv.className = "invalid";
+          return;
         }
+        suma += digito * (10 - i);
       }
 
-      // Fórmula de validación del dígito de control
-      const digitoCalculado = (3 * sumaImpares + sumaPares) % 10;
+      // Paso 4: Verificar el dígito de control
+      const modulo11 = suma % 11;
+      const digitoValidacion = 11 - modulo11;
 
-      // Validar si el dígito de control coincide
-      if (digitoCalculado === digitoControl) {
+      // Paso 5: Comparar el dígito de control con el proporcionado
+      if (digitoValidacion === digitoControl) {
         resultadoDiv.textContent = "Número válido";
         resultadoDiv.className = "valid";
       } else {
@@ -190,7 +114,29 @@
         resultadoDiv.className = "invalid";
       }
     }
+
+    // Función para iniciar el escáner QR
+    function startScanner() {
+      const qrCodeScanner = new Html5QrcodeScanner(
+        "scanner-container", 
+        { fps: 10, qrbox: 250 }, 
+        false
+      );
+
+      // Mostrar el contenedor del escáner
+      document.getElementById("scanner-container").style.display = "block";
+
+      qrCodeScanner.render((decodedText) => {
+        console.log("Código QR escaneado: ", decodedText);
+        validarCarnet(decodedText);
+        qrCodeScanner.clear(); // Detener el escáner después de escanear
+        document.getElementById("scanner-container").style.display = "none"; // Ocultar el escáner
+      }, (errorMessage) => {
+        // Aquí puedes manejar errores si no se encuentra un QR o si el QR es ilegible
+      });
+    }
   </script>
 
 </body>
 </html>
+
